@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>컴포즈 커피 - 고객 의견</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Lucide React Icons (inline)
+        const Settings = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v6m0 6v6m0-18a9 9 0 0 1 9 9m-18 0a9 9 0 0 1 9-9"></path>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        );
+
+        const X = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        );
+
+        const Download = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+        );
+
+        const QrCode = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="5" height="5"></rect>
+                <rect x="16" y="3" width="5" height="5"></rect>
+                <rect x="3" y="16" width="5" height="5"></rect>
+                <path d="M21 16h-3a2 2 0 0 0-2 2v3"></path>
+            </svg>
+        );
+
+        const Send = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        );
+
+        const CheckCircle = ({ size = 24, className = '' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+        );
+
+        const Clock = ({ size = 24, className = '' }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        );
+
+        // Mock storage for demo (localStorage based)
+        const mockStorage = {
+            async get(key) {
+                const value = localStorage.getItem(key);
+                return value ? { key, value } : null;
+            },
+            async set(key, value) {
+                localStorage.setItem(key, value);
+                return { key, value };
+            },
+            async delete(key) {
+                localStorage.removeItem(key);
+                return { key, deleted: true };
+            },
+            async list(prefix) {
+                const keys = Object.keys(localStorage).filter(k => k.startsWith(prefix));
+                return { keys };
+            }
+        };
+
+        // Assign to window
+        window.storage = mockStorage;
+
+        function ComposeCoffeeFeedback() {
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [showLogin, setShowLogin] = useState(false);
+            const [password, setPassword] = useState('');
+            const [showQR, setShowQR] = useState(false);
+            const [feedbacks, setFeedbacks] = useState([]);
+            const [newFeedback, setNewFeedback] = useState('');
+            const [adminResponse, setAdminResponse] = useState('');
+            const [selectedFeedback, setSelectedFeedback] = useState(null);
+
+            useEffect(() => {
+                loadFeedbacks();
+            }, []);
+
+            const loadFeedbacks = async () => {
+                try {
+                    const keys = await window.storage.list('feedback:');
+                    if (keys && keys.keys) {
+                        const loadedFeedbacks = await Promise.all(
+                            keys.keys.map(async (key) => {
+                                try {
+                                    const result = await window.storage.get(key);
+                                    return result ? JSON.parse(result.value) : null;
+                                } catch {
+                                    return null;
+                                }
+                            })
+                        );
+                        setFeedbacks(loadedFeedbacks.filter(f => f !== null).sort((a, b) => b.timestamp - a.timestamp));
+                    }
+                } catch (error) {
+                    console.log('피드백 로드 중 오류:', error);
+                }
+            };
+
+            const handleLogin = () => {
+                if (password === 'compose2024') {
+                    setIsAdmin(true);
+                    setShowLogin(false);
+                    setPassword('');
+                } else {
+                    alert('비밀번호가 올바르지 않습니다.');
+                }
+            };
+
+            const handleSubmitFeedback = async () => {
+                if (!newFeedback.trim()) return;
+
+                const feedback = {
+                    id: Date.now(),
+                    content: newFeedback,
+                    response: '',
+                    status: 'pending',
+                    timestamp: Date.now()
+                };
+
+                try {
+                    await window.storage.set(`feedback:${feedback.id}`, JSON.stringify(feedback));
+                    await loadFeedbacks();
+                    setNewFeedback('');
+                    alert('소중한 의견 감사합니다! 🙏');
+                } catch (error) {
+                    alert('의견 제출 중 오류가 발생했습니다.');
+                }
+            };
+
+            const handleAdminResponse = async () => {
+                if (!selectedFeedback || !adminResponse.trim()) return;
+
+                const updated = {
+                    ...selectedFeedback,
+                    response: adminResponse,
+                    status: 'completed'
+                };
+
+                try {
+                    await window.storage.set(`feedback:${updated.id}`, JSON.stringify(updated));
+                    await loadFeedbacks();
+                    setSelectedFeedback(null);
+                    setAdminResponse('');
+                } catch (error) {
+                    alert('응답 저장 중 오류가 발생했습니다.');
+                }
+            };
+
+            const handleDeleteFeedback = async (id) => {
+                if (!window.confirm('이 피드백을 삭제하시겠습니까?')) return;
+
+                try {
+                    await window.storage.delete(`feedback:${id}`);
+                    await loadFeedbacks();
+                    if (selectedFeedback?.id === id) {
+                        setSelectedFeedback(null);
+                    }
+                } catch (error) {
+                    alert('삭제 중 오류가 발생했습니다.');
+                }
+            };
+
+            const generateQRCode = () => {
+                const url = window.location.href;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}`;
+                return qrUrl;
+            };
+
+            const downloadQR = () => {
+                const link = document.createElement('a');
+                link.href = generateQRCode();
+                link.download = 'compose-coffee-qr.png';
+                link.click();
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
+                    <header className="bg-gradient-to-r from-amber-800 to-orange-700 text-white shadow-lg">
+                        <div className="container mx-auto px-4 py-6 flex items-center justify-between">
+                            <div>
+                                <h1 className="text-3xl font-bold">☕ 컴포즈 커피</h1>
+                                <p className="text-amber-100 mt-1">고객님의 소중한 의견을 들려주세요</p>
+                            </div>
+                            <div className="flex gap-2">
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => setShowQR(true)}
+                                        className="p-3 bg-white/20 hover:bg-white/30 rounded-lg transition"
+                                    >
+                                        <QrCode size={24} />
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => isAdmin ? setIsAdmin(false) : setShowLogin(true)}
+                                    className="p-3 bg-white/20 hover:bg-white/30 rounded-lg transition"
+                                >
+                                    <Settings size={24} />
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="container mx-auto px-4 py-8 max-w-4xl">
+                        {!isAdmin && (
+                            <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">개선사항 제안하기</h2>
+                                <textarea
+                                    value={newFeedback}
+                                    onChange={(e) => setNewFeedback(e.target.value)}
+                                    placeholder="어떤 점을 개선했으면 좋겠나요? 편하게 말씀해주세요!"
+                                    className="w-full p-4 border-2 border-amber-200 rounded-xl focus:border-amber-500 focus:outline-none min-h-32 resize-none"
+                                />
+                                <button
+                                    onClick={handleSubmitFeedback}
+                                    disabled={!newFeedback.trim()}
+                                    className="mt-4 w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-amber-700 hover:to-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    <Send size={20} />
+                                    의견 보내기
+                                </button>
+                            </div>
+                        )}
+
+                        {isAdmin && (
+                            <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">관리자 패널</h2>
+                                <div className="text-sm text-gray-600 mb-4">
+                                    총 {feedbacks.length}개의 피드백 | 대기중: {feedbacks.filter(f => f.status === 'pending').length}개
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            {feedbacks.map((feedback) => (
+                                <div key={feedback.id} className="bg-white rounded-2xl shadow-lg p-6">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            {feedback.status === 'completed' ? (
+                                                <CheckCircle className="text-green-500" size={24} />
+                                            ) : (
+                                                <Clock className="text-amber-500" size={24} />
+                                            )}
+                                            <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
+                                                feedback.status === 'completed' 
+                                                    ? 'bg-green-100 text-green-700' 
+                                                    : 'bg-amber-100 text-amber-700'
+                                            }`}>
+                                                {feedback.status === 'completed' ? '개선 완료' : '검토중'}
+                                            </span>
+                                        </div>
+                                        <span className="text-sm text-gray-500">
+                                            {new Date(feedback.timestamp).toLocaleDateString('ko-KR')}
+                                        </span>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <p className="font-semibold text-gray-800 mb-2">고객 의견:</p>
+                                        <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{feedback.content}</p>
+                                    </div>
+
+                                    {feedback.response && (
+                                        <div className="border-t pt-4">
+                                            <p className="font-semibold text-amber-800 mb-2">매장 답변:</p>
+                                            <p className="text-gray-700 bg-amber-50 p-4 rounded-lg">{feedback.response}</p>
+                                        </div>
+                                    )}
+
+                                    {isAdmin && (
+                                        <div className="mt-4 flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedFeedback(feedback);
+                                                    setAdminResponse(feedback.response || '');
+                                                }}
+                                                className="flex-1 bg-amber-600 text-white py-2 rounded-lg hover:bg-amber-700 transition"
+                                            >
+                                                {feedback.response ? '답변 수정' : '답변 작성'}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteFeedback(feedback.id)}
+                                                className="px-4 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition"
+                                            >
+                                                삭제
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+
+                            {feedbacks.length === 0 && (
+                                <div className="text-center py-12 text-gray-500">
+                                    아직 등록된 피드백이 없습니다.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {showLogin && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-2xl font-bold text-gray-800">관리자 로그인</h3>
+                                    <button onClick={() => setShowLogin(false)} className="text-gray-500 hover:text-gray-700">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                                    placeholder="비밀번호 입력"
+                                    className="w-full p-4 border-2 border-gray-300 rounded-xl focus:border-amber-500 focus:outline-none mb-4"
+                                />
+                                <button
+                                    onClick={handleLogin}
+                                    className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-amber-700 hover:to-orange-700 transition"
+                                >
+                                    로그인
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedFeedback && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-2xl font-bold text-gray-800">답변 작성</h3>
+                                    <button onClick={() => setSelectedFeedback(null)} className="text-gray-500 hover:text-gray-700">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+                                <div className="mb-4">
+                                    <p className="font-semibold text-gray-800 mb-2">고객 의견:</p>
+                                    <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{selectedFeedback.content}</p>
+                                </div>
+                                <textarea
+                                    value={adminResponse}
+                                    onChange={(e) => setAdminResponse(e.target.value)}
+                                    placeholder="개선 상황을 알려주세요..."
+                                    className="w-full p-4 border-2 border-amber-200 rounded-xl focus:border-amber-500 focus:outline-none min-h-32 resize-none mb-4"
+                                />
+                                <button
+                                    onClick={handleAdminResponse}
+                                    disabled={!adminResponse.trim()}
+                                    className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-amber-700 hover:to-orange-700 transition disabled:opacity-50"
+                                >
+                                    답변 저장
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {showQR && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-2xl font-bold text-gray-800">QR 코드</h3>
+                                    <button onClick={() => setShowQR(false)} className="text-gray-500 hover:text-gray-700">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+                                <img 
+                                    src={generateQRCode()} 
+                                    alt="QR Code" 
+                                    className="mx-auto mb-6 rounded-xl shadow-lg"
+                                />
+                                <p className="text-gray-600 mb-4">매장에 이 QR코드를 배치해주세요</p>
+                                <button
+                                    onClick={downloadQR}
+                                    className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-amber-700 hover:to-orange-700 transition flex items-center justify-center gap-2"
+                                >
+                                    <Download size={20} />
+                                    QR 코드 다운로드
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ComposeCoffeeFeedback />, document.getElementById('root'));
+    </script>
+</body>
+</html>
